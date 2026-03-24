@@ -1,5 +1,8 @@
 # 🧩 Minesweeper in C# (Windows Forms)
 
+## 🎮 Preview
+![Minesweeper Screenshot](Capture.PNG)
+
 A beginner-friendly implementation of the classic Minesweeper game built using C# Windows Forms.
 
 ---
