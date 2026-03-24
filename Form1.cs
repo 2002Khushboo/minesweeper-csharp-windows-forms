@@ -1,17 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Minesweeper
 {
     public partial class Form1 : Form
     {
+        // =============================
+        // Minesweeper Game (WinForms)
+        // Layers:
+        // 1. UI Layer (Form, Buttons)
+        // 2. Logic Layer (Game rules)
+        // 3. Data Layer (Cell model)
+        // =============================
+
         int rows = 10;
         int cols = 10;
         Cell[,] board;
@@ -20,14 +22,42 @@ namespace Minesweeper
         {
             InitializeComponent();
         }
-
         private void Form1_Load(object sender, EventArgs e)
         {
+            //UI - form
+            this.Text = "Minesweeper";
+            this.BackColor = Color.FromArgb(30, 30, 30); // dark theme
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.StartPosition = FormStartPosition.CenterScreen;
+
+            //UI - adding panel
+            Panel topPanel = new Panel();
+            topPanel.Height = 60;
+            topPanel.Dock = DockStyle.Top;
+            topPanel.BackColor = Color.FromArgb(45, 45, 45);
+
+            this.Controls.Add(topPanel);
+
+            //UI - adding title label
+            Label title = new Label();
+            title.Text = "MINESWEEPER";
+            title.ForeColor = Color.White;
+            title.Font = new Font("Segoe UI", 16, FontStyle.Bold);
+            title.AutoSize = true;
+            title.Left = 10;
+            title.Top = 15;
+
+            topPanel.Controls.Add(title);
+
+            //actual logic
             InitializeBoard();
             PlaceMines(15);
             CalculateNumbers();
             CreateButtons();
         }
+
+        // Logic: initialize board data structure
         private void InitializeBoard()
         {
             board = new Cell[rows, cols];
@@ -40,6 +70,8 @@ namespace Minesweeper
                 }
             }
         }
+
+        // Logic: randomly place mines
         private void PlaceMines(int mineCount)
         {
             Random rand = new Random();
@@ -57,6 +89,8 @@ namespace Minesweeper
                 }
             }
         }
+
+        // Logic: calculate adjacent mine counts
         private void CalculateNumbers()
         {
             int[] dr = { -1, -1, -1, 0, 0, 1, 1, 1 };
@@ -86,21 +120,40 @@ namespace Minesweeper
                 }
             }
         }
+
+        // UI: create visual grid of buttons
         private void CreateButtons()
         {
-            buttons = new Button[rows, cols];
+            int topOffset = 60 + 10; //60 = panel-height, 10 = padding
+            int cellSize = 35;
 
+            buttons = new Button[rows, cols];
+            
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < cols; j++)
                 {
                     Button btn = new Button();
-                    btn.Width = 30;
-                    btn.Height = 30;
-                    btn.Left = j * 30;
-                    btn.Top = i * 30;
-                    btn.ForeColor = Color.Black;
+
+                    // UI: size & position
+                    btn.Width = cellSize;
+                    btn.Height = cellSize;
+                    btn.Left = j * cellSize;
+                    btn.Top = topOffset + i * cellSize;
+
+                    // UI: styling (modern flat look)
+                    btn.FlatStyle = FlatStyle.Flat;
+                    btn.FlatAppearance.BorderSize = 1;
+                    btn.FlatAppearance.BorderColor = Color.Gray;
+
+                    btn.BackColor = Color.FromArgb(70, 70, 70);
+                    btn.ForeColor = Color.White;
+                    btn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+
+                    // Logic: track position
                     btn.Tag = new Point(i, j);
+
+                    // Logic: click handling
                     btn.MouseDown += Cell_MouseDown;
 
                     this.Controls.Add(btn);
@@ -108,6 +161,23 @@ namespace Minesweeper
                 }
             }
         }
+        private Color GetNumberColor(int number)
+        {
+            switch (number)
+            {
+                case 1: return Color.LightBlue;
+                case 2: return Color.LightGreen;
+                case 3: return Color.Red;
+                case 4: return Color.DarkBlue;
+                case 5: return Color.Maroon;
+                case 6: return Color.Teal;
+                case 7: return Color.Black;
+                case 8: return Color.Gray;
+                default: return Color.White;
+            }
+        }
+
+        // Logic: handle left/right click
         private void Cell_MouseDown(object sender, MouseEventArgs e)
         {
             Button btn = sender as Button;
@@ -130,23 +200,18 @@ namespace Minesweeper
             Cell cell = board[r, c];
             Button btn = buttons[r, c];
 
+            // Logic: cannot flag revealed cells
             if (cell.IsRevealed)
                 return;
 
             cell.IsFlagged = !cell.IsFlagged;
 
+            // UI: flag styling
             btn.Text = cell.IsFlagged ? "🚩" : "";
+            btn.ForeColor = Color.Orange;
         }
-        /*private void Cell_Click(object sender, EventArgs e)
-        {
-            Button btn = sender as Button;
-            Point p = (Point)btn.Tag;
 
-            int r = p.X;
-            int c = p.Y;
-
-            RevealCell(r, c);
-        }*/
+        // Logic: reveal cell + recursion (flood fill)
         private void RevealCell(int r, int c)
         {
             if (r < 0 || r >= rows || c < 0 || c >= cols)
@@ -167,7 +232,21 @@ namespace Minesweeper
                 return;
             }
 
-            btn.Text = cell.AdjacentMines > 0 ? cell.AdjacentMines.ToString() : "";
+            // UI: revealed cell appearance (pressed look)
+            btn.BackColor = Color.FromArgb(200, 200, 200);
+            btn.FlatAppearance.BorderColor = Color.DarkGray;
+
+            // Logic + UI: show number
+            if (cell.AdjacentMines > 0)
+            {
+                btn.Text = cell.AdjacentMines.ToString();
+                btn.ForeColor = GetNumberColor(cell.AdjacentMines);
+            }
+            else
+            {
+                btn.Text = "";
+            }
+
             btn.Enabled = false;
 
             // If empty → expand
@@ -183,6 +262,8 @@ namespace Minesweeper
                 MessageBox.Show("You Win! 🎉");
             }
         }
+
+        // Logic: check win condition
         private bool CheckWin()
         {
             for (int i = 0; i < rows; i++)
@@ -197,6 +278,8 @@ namespace Minesweeper
             }
             return true;
         }
+
+        // UI: show all mines on game over
         private void RevealAllMines()
         {
             for (int i = 0; i < rows; i++)
@@ -205,7 +288,12 @@ namespace Minesweeper
                 {
                     if (board[i, j].IsMine)
                     {
-                        buttons[i, j].Text = "💣";
+                        Button btn = buttons[i, j];
+
+                        // UI: mine styling
+                        btn.Text = "💣";
+                        btn.BackColor = Color.DarkRed;
+                        btn.ForeColor = Color.White;
                     }
                 }
             }
